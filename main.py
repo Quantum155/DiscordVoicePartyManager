@@ -12,6 +12,8 @@ dotenv.load_dotenv()
 TOKEN = str(os.getenv("TOKEN"))
 GUILD = int(os.getenv("GUILD"))
 ROLE_NAME = str(os.getenv("ROLE_NAME"))
+QUEUE_CHANNEL = int(os.getenv("QUEUE_CHANNEL"))
+MAIN_CHANNEL = int(os.getenv("MAIN_CHANNEL"))
 
 # Client setup ---------------------------------------------------------------------------------------------------------
 class TaskClient(discord.Client):
@@ -31,10 +33,14 @@ async def online(interaction):
     await interaction.response.send_message("I'm online!")
 
 @tree.command(name="party", description="Add a user to current session", guild=discord.Object(id=GUILD))
-async def party(interaction, target: discord.Member):
+async def party(interaction: discord.Interaction, target: discord.Member):
     global partied_members
     role = discord.utils.get(target.guild.roles, name=ROLE_NAME)
+    channel = interaction.guild.get_channel(QUEUE_CHANNEL)
     partied_members.append(target)
+    if target.voice is not None:
+        if target.voice.channel.name == channel.name:
+            await target.move_to(interaction.guild.get_channel(MAIN_CHANNEL))
     await target.add_roles(role)
     await interaction.response.send_message(f"**[✓]** User *{target.display_name}* added to session")
 
@@ -43,10 +49,14 @@ async def endsession(interaction):
     global partied_members
     role = discord.utils.get(interaction.guild.roles, name=ROLE_NAME)
     members = len(partied_members)
+    channel = interaction.guild.get_channel(MAIN_CHANNEL)
     fails = 0
     for member in partied_members:
         try:
             await member.remove_roles(role)
+            if member.voice is not None:
+                if member.voice.channel.name == channel.name:
+                    await member.move_to(interaction.guild.get_channel(QUEUE_CHANNEL))
         except Exception as ex:
             fails += 1
             print(ex)
@@ -61,7 +71,11 @@ async def endsession(interaction):
 async def kickparty(interaction, target: discord.Member):
     global partied_members
     role = discord.utils.get(interaction.guild.roles, name=ROLE_NAME)
+    channel = interaction.guild.get_channel(MAIN_CHANNEL)
     if target in partied_members:
+        if target.voice is not None:
+            if target.voice.channel.name == channel.name:
+                await target.move_to(interaction.guild.get_channel(QUEUE_CHANNEL))
         await target.remove_roles(role)
         del partied_members[partied_members.index(target)]
         await interaction.response.send_message(f"**[✓]** User {target.display_name} removed from session!")
