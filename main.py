@@ -4,6 +4,8 @@ import discord
 from discord import app_commands
 import dotenv
 import os
+import datetime
+import externals
 
 partied_members: list[discord.Member] = []
 
@@ -89,6 +91,70 @@ async def listparty(interaction):
     for user in partied_members:
         names.append(user.display_name)
     await interaction.response.send_message(f"**[✓]** Listing party members: {names}")
+
+@tree.command(name="predict2023", description="Predicts a players stats by the end of 2023", guild=discord.Object(id=GUILD))
+async def predict2023(interaction, player: str, days_back: int, fkills: int, fdeaths: int, stars: float,
+                      current_fkills: int, current_fdeaths: int, current_stars: int):
+    fkdr_current = round(current_fkills / current_fdeaths, 2)
+    predicted_stars, predicted_finals, predicted_fdeaths, predicted_fkdr = externals.predict_stats(days_back, fkills, fdeaths, stars, current_fkills, current_fdeaths, current_stars)
+    fkdr_change = round(predicted_fkdr - fkdr_current, 2)
+
+    await interaction.response.send_message(f"**[✓]** **{player}** is predicted to have the following stats by 2023/12/30 based on the last **{days_back}** days:\n"
+                                            f"Stars: **[{predicted_stars}✫]**"
+                                            f" ({externals.change_character(current_stars, after=predicted_stars)}"
+                                            f"{predicted_stars-current_stars}✫)\n"
+                                            f"FKDR: **{predicted_fkdr}** ({externals.change_character(change=fkdr_change)}{fkdr_change} fkdr)")
+
+@tree.command(name="predictstats", description="Predicts a players stats by a specific date", guild=discord.Object(id=GUILD))
+async def predict_by_date(interaction, player: str, days_back: int, fkills: int, fdeaths: int, stars: float,
+                          current_fkills: int, current_fdeaths: int, current_stars: int, predict_by_days: int):
+    fkdr_current = round(current_fkills / current_fdeaths, 2)
+
+    today = datetime.date.today()
+    prediction_day = today + datetime.timedelta(days=predict_by_days)
+
+    predicted_stars, predicted_finals, predicted_fdeaths, predicted_fkdr = externals.predict_stats(days_back, fkills, fdeaths, stars, current_fkills, current_fdeaths, current_stars, prediction_day)
+    fkdr_change = round(predicted_fkdr - fkdr_current, 2)
+
+    await interaction.response.send_message(f"**[✓]** **{player}** is predicted to have the following stats in"
+                                            f" **{predict_by_days}** days ({prediction_day.year}/{prediction_day.month}/"
+                                            f"{prediction_day.day}) based on the last **{days_back}** days:\n"
+                                            f"Stars: **[{predicted_stars}✫]**"
+                                            f" ({externals.change_character(current_stars, after=predicted_stars)}"
+                                            f"{predicted_stars-current_stars}✫)\n"
+                                            f"FKDR: **{predicted_fkdr}** ({externals.change_character(change=fkdr_change)}{fkdr_change} fkdr)")
+
+@tree.command(name="predictprestiges", description="Predicts when a player will prestige", guild=discord.Object(id=GUILD))
+async def predictprestiges(interaction, player: str, days_back: int, stars: float, current_stars: int):
+    await interaction.response.send_message("**[!]** Feature not working yet:(")
+    if "a" == "WIP":
+        stars_daily = days_back / stars
+        prestiges_calculated = 0
+        existing_pres_count = 1
+        string = f"**[✓]** **{player}** is predicted to prestige on the following days:\n"
+        while prestiges_calculated < 5:
+            if current_stars > existing_pres_count * 100:
+                existing_pres_count += 1
+            else:
+                existing_pres_count += 1
+
+                days_per_prestige = round(stars_daily * 100)
+
+                if prestiges_calculated == 0:
+                    days_until_prestige = round(stars_daily * (100 - current_stars % 100))
+                else:
+                    days_until_prestige = round((days_per_prestige * (prestiges_calculated+1)) + (stars_daily * (100 - current_stars % 100)))
+
+                today = datetime.date.today()
+                prestige_date = today + datetime.timedelta(days=days_per_prestige*(prestiges_calculated+1))
+
+                string += f"**[{existing_pres_count*100-100}✫]** in **{days_per_prestige*prestiges_calculated}** days at " \
+                          f"**{prestige_date.year}/{prestige_date.month}/{prestige_date.day}**\n"
+                prestiges_calculated += 1
+
+
+
+
 
 
 # Events ---------------------------------------------------------------------------------------------------------------
