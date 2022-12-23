@@ -13,7 +13,7 @@ import externals
 import subprocess
 
 partied_members: list[discord.Member] = []
-VERSION = 7
+VERSION = 8
 
 # Env setup ------------------------------------------------------------------------------------------------------------
 dotenv.load_dotenv()
