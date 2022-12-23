@@ -13,7 +13,8 @@ import externals
 import subprocess
 
 partied_members: list[discord.Member] = []
-VERSION = 9
+
+with open("version", "r") as f: VERSION = f.read()
 
 # Env setup ------------------------------------------------------------------------------------------------------------
 dotenv.load_dotenv()
@@ -36,14 +37,10 @@ intents = discord.Intents.default()
 client = TaskClient(intents=intents)
 tree = app_commands.CommandTree(client)
 
-def restart():
-    subprocess.popen([sys.executable, __file__], shell=True)
-    os._exit(1)
-
 # Commands -------------------------------------------------------------------------------------------------------------
 @tree.command(name="online", description="Check if bot is responding", guild=discord.Object(id=GUILD))
 async def online(interaction):
-    await interaction.response.send_message("I'm online!")
+    await interaction.response.send_message(f"I'm online, and my version is {VERSION}!")
 
 @tree.command(name="party", description="Add a user to current session", guild=discord.Object(id=GUILD))
 async def party(interaction: discord.Interaction, target: discord.Member):
@@ -209,9 +206,14 @@ async def selfupdate(interaction: discord.Interaction):
             is_failed = True
 
     if not is_failed:
-        text += f"**[✓]** Local files updated. Restarting bot."
+        with open("version", "r") as f: new_version = f.read()
+        text += f"**Update appears to be successful! Version change: ~{VERSION}~ -> {new_version}**"
+        text += f"\nRestarting!"
         await interaction.edit_original_response(content=text)
-        restart()
+        subprocess.Popen(f'python {__file__}',
+                         shell=True, start_new_session=True)
+        await client.close()
+        os._exit(0)
     else:
         text += f"\n**Update aborted.**"
         await interaction.edit_original_response(content=text)
@@ -219,7 +221,12 @@ async def selfupdate(interaction: discord.Interaction):
 
 @tree.command(name="restart", description="Attempts to restart the bot. If unsure, don't run this command.", guild=discord.Object(id=GUILD))
 async def restart(interaction: discord.Interaction):
-    restart()
+    print("Splitting!")
+    await interaction.response.send_message("Attempting to restart")
+    subprocess.Popen(f'python {__file__}',
+                     shell=True, start_new_session=True)
+    await client.close()
+    os._exit(0)
 
 
 # Events ---------------------------------------------------------------------------------------------------------------
