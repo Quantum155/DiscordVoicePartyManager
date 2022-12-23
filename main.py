@@ -1,3 +1,4 @@
+import sys
 from typing import Any
 
 import discord
@@ -12,7 +13,7 @@ import externals
 import subprocess
 
 partied_members: list[discord.Member] = []
-VERSION = 6
+VERSION = 7
 
 # Env setup ------------------------------------------------------------------------------------------------------------
 dotenv.load_dotenv()
@@ -206,6 +207,7 @@ async def selfupdate(interaction: discord.Interaction):
     if not is_failed:
         text += f"**[✓]** Local files updated. Restarting bot."
         await interaction.edit_original_response(content=text)
+        sys.exit()
     else:
         text += f"\n**Update aborted.**"
         await interaction.edit_original_response(content=text)
