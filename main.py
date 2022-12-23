@@ -198,6 +198,10 @@ async def selfupdate(interaction: discord.Interaction):
             text += f"**[✓]** Nothing to update, bot is already up to date."
             await interaction.edit_original_response(content=text)
             is_failed = True
+        elif "Aborting" in output:
+            text += f"**[x]** Something went wrong."
+            await interaction.edit_original_response(content=text)
+            is_failed = True
 
     if not is_failed:
         text += f"**[✓]** Local files updated. Restarting bot."
