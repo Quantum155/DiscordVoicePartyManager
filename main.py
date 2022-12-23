@@ -190,7 +190,7 @@ async def selfupdate(interaction: discord.Interaction):
     if not is_failed:
         text += f"\n**[✓]** Running: `git pull`..."
         await interaction.edit_original_response(content=text)
-        output = subprocess.run(['git', 'pull'], stdout=subprocess.PIPE).stdout.decode('utf-8')
+        output = subprocess.getoutput("git pull")
         text += f"\n```{output}```"
         await interaction.edit_original_response(content=text)
 
@@ -200,7 +200,7 @@ async def selfupdate(interaction: discord.Interaction):
             is_failed = True
 
     if not is_failed:
-        text += f"\n**[✓]** Local files updated. Restarting bot."
+        text += f"**[✓]** Local files updated. Restarting bot."
         await interaction.edit_original_response(content=text)
     else:
         text += f"\n**Update aborted.**"
