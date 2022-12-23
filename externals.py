@@ -23,6 +23,12 @@ def predict_stats(days_back: int, fkills: int, fdeaths: int, stars: int,
     return round(predicted_stars, 2), round(predicted_finals, 2),\
         round(predicted_fdeaths, 2), round(predicted_fkdr, 2)
 
+# Main server: "<:up_emoji:1051970899743608954>"
+# Main server: "<:down_arrow:1051970897948442754>"
+
+# Test server: <:up_emoji:1051894293410881547>
+# Test server <:down_arrow:1051894291733164113>
+
 def change_character(original=None, after=None, change=None):
     if change is not None:
         if change >= 0:

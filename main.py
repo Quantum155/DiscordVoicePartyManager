@@ -5,6 +5,9 @@ from discord import app_commands
 import dotenv
 import os
 import datetime
+
+from discord.ext import tasks
+
 import externals
 
 partied_members: list[discord.Member] = []
@@ -23,7 +26,7 @@ class TaskClient(discord.Client):
         super().__init__(intents=intents, **options)
 
     async def setup_hook(self) -> None:
-        pass
+        task_refreshvc.start()
 
 intents = discord.Intents.default()
 client = TaskClient(intents=intents)
@@ -69,6 +72,17 @@ async def endsession(interaction):
         await interaction.response.send_message(f"**[✓]** Session ended! ({members - fails}/{members})")
     partied_members = []
 
+@tree.command(name="refreshvc", description="Moves users to their proper VC", guild=discord.Object(id=GUILD))
+async def refreshvc(interaction):
+    channel = interaction.guild.get_channel(QUEUE_CHANNEL)
+    for member in partied_members:
+        try:
+            if member.voice is not None:
+                if member.voice.channel.name == channel.name:
+                    await member.move_to(interaction.guild.get_channel(MAIN_CHANNEL))
+        except Exception as ex:
+            pass
+
 @tree.command(name="partykick", description="Kick a user from session", guild=discord.Object(id=GUILD))
 async def kickparty(interaction, target: discord.Member):
     global partied_members
@@ -102,7 +116,7 @@ async def predict2023(interaction, player: str, days_back: int, fkills: int, fde
     await interaction.response.send_message(f"**[✓]** **{player}** is predicted to have the following stats by 2023/12/30 based on the last **{days_back}** days:\n"
                                             f"Stars: **[{predicted_stars}✫]**"
                                             f" ({externals.change_character(current_stars, after=predicted_stars)}"
-                                            f"{predicted_stars-current_stars}✫)\n"
+                                            f"{round(predicted_stars-current_stars, 2)}✫)\n"
                                             f"FKDR: **{predicted_fkdr}** ({externals.change_character(change=fkdr_change)}{fkdr_change} fkdr)")
 
 @tree.command(name="predictstats", description="Predicts a players stats by a specific date", guild=discord.Object(id=GUILD))
@@ -121,7 +135,7 @@ async def predict_by_date(interaction, player: str, days_back: int, fkills: int,
                                             f"{prediction_day.day}) based on the last **{days_back}** days:\n"
                                             f"Stars: **[{predicted_stars}✫]**"
                                             f" ({externals.change_character(current_stars, after=predicted_stars)}"
-                                            f"{predicted_stars-current_stars}✫)\n"
+                                            f"{round(predicted_stars-current_stars, 2)}✫)\n"
                                             f"FKDR: **{predicted_fkdr}** ({externals.change_character(change=fkdr_change)}{fkdr_change} fkdr)")
 
 @tree.command(name="predictprestiges", description="Predicts when a player will prestige", guild=discord.Object(id=GUILD))
@@ -153,10 +167,6 @@ async def predictprestiges(interaction, player: str, days_back: int, stars: floa
                 prestiges_calculated += 1
 
 
-
-
-
-
 # Events ---------------------------------------------------------------------------------------------------------------
 
 @client.event
@@ -166,6 +176,17 @@ async def on_ready():
 
 # Tasks ----------------------------------------------------------------------------------------------------------------
 
-
+@tasks.loop(seconds=5)
+async def task_refreshvc():  # Function to shut down the bot if its experiencing too many errors
+    await client.wait_until_ready()
+    guild = client.get_guild(GUILD)
+    channel = guild.get_channel(QUEUE_CHANNEL)
+    for member in partied_members:
+        try:
+            if member.voice is not None:
+                if member.voice.channel.name == channel.name:
+                    await member.move_to(guild.get_channel(MAIN_CHANNEL))
+        except Exception as ex:
+            pass
 
 client.run(TOKEN)
