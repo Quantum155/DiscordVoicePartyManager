@@ -9,8 +9,10 @@ import datetime
 from discord.ext import tasks
 
 import externals
+import subprocess
 
 partied_members: list[discord.Member] = []
+VERSION = 6
 
 # Env setup ------------------------------------------------------------------------------------------------------------
 dotenv.load_dotenv()
@@ -19,6 +21,7 @@ GUILD = int(os.getenv("GUILD"))
 ROLE_NAME = str(os.getenv("ROLE_NAME"))
 QUEUE_CHANNEL = int(os.getenv("QUEUE_CHANNEL"))
 MAIN_CHANNEL = int(os.getenv("MAIN_CHANNEL"))
+DEVELOPMENT = int(os.getenv("DEVELOPMENT"))
 
 # Client setup ---------------------------------------------------------------------------------------------------------
 class TaskClient(discord.Client):
@@ -165,6 +168,43 @@ async def predictprestiges(interaction, player: str, days_back: int, stars: floa
                 string += f"**[{existing_pres_count*100-100}✫]** in **{days_per_prestige*prestiges_calculated}** days at " \
                           f"**{prestige_date.year}/{prestige_date.month}/{prestige_date.day}**\n"
                 prestiges_calculated += 1
+
+# Self update commands -------------------------------------------------------------------------------------------------
+
+@tree.command(name="selfupdate", description="Attempts to update the bot. If unsure, don't run this command.", guild=discord.Object(id=GUILD))
+async def selfupdate(interaction: discord.Interaction):
+    is_failed = False
+    is_updated = False
+    text = f"**Starting self update - Requested by: {interaction.user.mention}**"
+    await interaction.response.send_message(text)
+    if DEVELOPMENT == 1:
+        text += "\n**[x]** Bot is running in a development environment, unable to update"
+        await interaction.edit_original_response(content=text)
+        is_failed = True
+    else:
+        text += "\n**[✓]** Bot is running in a production environment, continuing update"
+        await interaction.edit_original_response(content=text)
+        text += f"\n**[✓]** Current version is: {VERSION}"
+        await interaction.edit_original_response(content=text)
+
+    if not is_failed:
+        text += f"\n**[✓]** Running: `git pull`..."
+        await interaction.edit_original_response(content=text)
+        output = subprocess.run(['git', 'pull'], stdout=subprocess.PIPE).stdout.decode('utf-8')
+        text += f"\n```{output}```"
+        await interaction.edit_original_response(content=text)
+
+        if "Already up to date." in output:
+            text += f"**[✓]** Nothing to update, bot is already up to date."
+            await interaction.edit_original_response(content=text)
+            is_failed = True
+
+    if not is_failed:
+        text += f"\n**[✓]** Local files updated. Restarting bot."
+        await interaction.edit_original_response(content=text)
+    else:
+        text += f"\n**Update aborted.**"
+        await interaction.edit_original_response(content=text)
 
 
 # Events ---------------------------------------------------------------------------------------------------------------
