@@ -13,7 +13,7 @@ import externals
 import subprocess
 
 partied_members: list[discord.Member] = []
-VERSION = 8
+VERSION = 9
 
 # Env setup ------------------------------------------------------------------------------------------------------------
 dotenv.load_dotenv()
@@ -35,6 +35,10 @@ class TaskClient(discord.Client):
 intents = discord.Intents.default()
 client = TaskClient(intents=intents)
 tree = app_commands.CommandTree(client)
+
+def restart():
+    subprocess.popen([sys.executable, __file__], shell=True)
+    os._exit(1)
 
 # Commands -------------------------------------------------------------------------------------------------------------
 @tree.command(name="online", description="Check if bot is responding", guild=discord.Object(id=GUILD))
@@ -207,10 +211,15 @@ async def selfupdate(interaction: discord.Interaction):
     if not is_failed:
         text += f"**[✓]** Local files updated. Restarting bot."
         await interaction.edit_original_response(content=text)
-        sys.exit()
+        restart()
     else:
         text += f"\n**Update aborted.**"
         await interaction.edit_original_response(content=text)
+
+
+@tree.command(name="restart", description="Attempts to restart the bot. If unsure, don't run this command.", guild=discord.Object(id=GUILD))
+async def restart(interaction: discord.Interaction):
+    restart()
 
 
 # Events ---------------------------------------------------------------------------------------------------------------
