@@ -14,7 +14,7 @@ import subprocess
 
 partied_members: list[discord.Member] = []
 
-with open("version", "r") as f: VERSION = f.read()
+with open("version", "r") as f: VERSION = f.read().strip()
 
 # Env setup ------------------------------------------------------------------------------------------------------------
 dotenv.load_dotenv()
@@ -206,7 +206,7 @@ async def selfupdate(interaction: discord.Interaction):
             is_failed = True
 
     if not is_failed:
-        with open("version", "r") as f: new_version = f.read()
+        with open("version", "r") as f: new_version = f.read().strip()
         text += f"**Update appears to be successful! Version change: ~{VERSION}~ -> {new_version}**"
         text += f"\nRestarting!"
         await interaction.edit_original_response(content=text)
